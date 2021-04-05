@@ -1,0 +1,70 @@
+---
+title: "Portfolio-5"
+author: "Natalie Frye"
+date: "4/5/2021"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r load-packages}
+library(tidyverse) 
+library(skimr)
+```
+
+```{r load-data, message = FALSE}
+npg_art <- read_csv("data/npg-art.csv")
+```
+
+Using my previous web-scraped data from the National Portrait Gallery, I would now like to try to clean up the date column to get rid of some of the extra stuff with the years. 
+
+```{r clean-up-column}
+npg_art <- npg_art %>%
+  separate(date, into = c("date", "second_date"), sep = "\\-") %>%
+  mutate(year_cleaned = str_remove(date,"c.") %>%
+  as.numeric)
+
+
+skim(npg_art)
+```
+
+The most common extra thing in the dates column was a "c." and a range of dates, so I separated the dates ranges into two columns because I was only interested in the first one, and then removed the "c." from the new dates. Now, only 43 dates are missing out of the 465 pieces. 
+
+I think it would be interesting to look at the descriptives of the dates now that a lot more of them have been made into a format that I can examine them in. 
+
+```{r summarize-dates}
+npg_art %>%
+  summarize(
+    mean_year = mean(year_cleaned, na.rm = TRUE),
+    sd_year = sd(year_cleaned, na.rm = TRUE),
+    min_year = min(year_cleaned, na.rm = TRUE),
+    max_year = max(year_cleaned, na.rm = TRUE)
+  )
+
+```
+
+Now, the mean year is 1888, which is earlier than it was before fixing these dates (1913), the sd is 49.5 years (was 60 before), and the earliest piece is from 1762, and the max from 2012 (both the same as before).
+
+Finally, I'd like to vizualise these. 
+
+```{r visualize-dates}
+ggplot(data = npg_art,
+       mapping = aes(x = year_cleaned)) +
+  geom_histogram(binwidth = 5) +
+  labs(title = "Distribution of Dates of National Portrait Gallery Paintings", 
+       x = "Year made",
+       y = "Number of pieces")
+
+```
+
+From this, you can see that there's one bin (of a width of 5 years) that looks to be in the 1860s with way more pieces than the rest, which wasn't present when I plotted these dates before cleaning them up. My hunch is that this is a time frame during the Civil War, which, as previously noted, a lot of this museum's collection centers around, and that pieces from this time aren't dated exactly, so many of them were listed as "circa" whatever the time frame is, so now they're all in the same bin. 
+
+```{r check-high-value}
+npg_art %>%
+  count(year_cleaned, sort = TRUE)
+
+```
+
+The year is 1860, which makes sense with my theory.
